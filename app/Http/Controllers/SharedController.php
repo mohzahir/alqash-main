@@ -2,27 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Request;
-use App\Utils\Helpers;
-use App\Models\BusinessSetting;
-use Illuminate\Http\JsonResponse;
+use App\CPU\Helpers;
+use App\CPU\ImageManager;
+use App\Model\BusinessSetting;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 
 class SharedController extends Controller
 {
-    public function changeLanguage(Request $request):JsonResponse
+    public function lang($local)
     {
         $direction = 'ltr';
-        $language = getWebConfig('language');
-        foreach ($language as $data) {
-            if ($data['code'] == $request['language_code']) {
-                $direction = $data['direction'] ?? 'ltr';
+        $language = BusinessSetting::where('type', 'language')->first();
+        foreach (json_decode($language['value'], true) as $key => $data) {
+            if ($data['code'] == $local) {
+                $direction = isset($data['direction']) ? $data['direction'] : 'ltr';
             }
         }
         session()->forget('language_settings');
         Helpers::language_load();
-        session()->put('local', $request['language_code']);
+        session()->put('local', $local);
         Session::put('direction', $direction);
-        return response()->json(['message'=> translate('language_change_successfully').'.']);
+        return redirect()->back();
     }
 }

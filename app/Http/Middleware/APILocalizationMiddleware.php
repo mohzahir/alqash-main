@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Utils\Helpers;
+use App\CPU\Helpers;
 use Closure;
 use Illuminate\Support\Facades\App;
 

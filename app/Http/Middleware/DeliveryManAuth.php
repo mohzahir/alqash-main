@@ -2,17 +2,17 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\DeliveryMan;
+use App\Model\DeliveryMan;
 use Closure;
-use Illuminate\Http\Request;
+use function App\CPU\translate;
 
 class DeliveryManAuth
 {
     /**
      * Handle an incoming request.
      *
-     * @param Request $request
-     * @param Closure $next
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure $next
      * @return mixed
      */
     public function handle($request, Closure $next)

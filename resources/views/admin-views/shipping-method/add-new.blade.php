@@ -10,8 +10,8 @@
     <div class="content container-fluid"> <!-- Page Heading -->
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{route('admin.dashboard.index')}}">{{translate('dashboard')}}</a></li>
-                <li class="breadcrumb-item" aria-current="page">{{translate('shipping_Method')}}</li>
+                <li class="breadcrumb-item"><a href="{{route('admin.dashboard')}}">{{\App\CPU\translate('Dashboard')}}</a></li>
+                <li class="breadcrumb-item" aria-current="page">{{\App\CPU\translate('Shipping Method')}}</li>
             </ol>
         </nav>
 
@@ -20,7 +20,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        {{translate('shipping_method_form')}}
+                        {{\App\CPU\translate('shipping_method')}} {{\App\CPU\translate('form')}}
                     </div>
                     <div class="card-body">
                         <form action="{{route('admin.business-settings.shipping-method.add')}}"
@@ -30,9 +30,8 @@
                             <div class="form-group">
                                 <div class="row justify-content-center">
                                     <div class="col-md-12">
-                                        <label for="title">{{translate('title')}}</label>
-                                        <input type="text" name="title" class="form-control"
-                                               placeholder="{{translate('title')}}">
+                                        <label for="title">{{\App\CPU\translate('title')}}</label>
+                                        <input type="text" name="title" class="form-control" placeholder="">
                                     </div>
                                 </div>
                             </div>
@@ -40,9 +39,9 @@
                             <div class="form-group">
                                 <div class="row justify-content-center">
                                     <div class="col-md-12">
-                                        <label for="duration">{{translate('duration')}}</label>
+                                        <label for="duration">{{\App\CPU\translate('duration')}}</label>
                                         <input type="text" name="duration" class="form-control"
-                                               placeholder="{{translate('ex')}} : {{translate('4_to_6_days')}}">
+                                               placeholder="{{\App\CPU\translate('Ex')}} : {{\App\CPU\translate('4 to 6 days')}}">
                                     </div>
                                 </div>
                             </div>
@@ -50,16 +49,16 @@
                             <div class="form-group">
                                 <div class="row justify-content-center">
                                     <div class="col-md-12">
-                                        <label for="cost">{{translate('cost')}}</label>
+                                        <label for="cost">{{\App\CPU\translate('cost')}}</label>
                                         <input type="number" min="0" max="1000000" name="cost" class="form-control"
-                                               placeholder="{{translate('ex')}} : 10">
+                                               placeholder="{{\App\CPU\translate('Ex')}} : 10">
                                     </div>
                                 </div>
                             </div>
 
                             <div class="card-footer">
                                 <button type="submit"
-                                        class="btn btn--primary ">{{translate('submit')}}</button>
+                                        class="btn btn--primary ">{{\App\CPU\translate('Submit')}}</button>
                             </div>
                         </form>
                     </div>
@@ -71,7 +70,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5>{{translate('shipping_method_table')}}</h5>
+                        <h5>{{\App\CPU\translate('shipping_method')}} {{\App\CPU\translate('table')}}</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -79,12 +78,12 @@
                                    style="text-align: {{Session::get('direction') === "rtl" ? 'right' : 'left'}};">
                                 <thead>
                                 <tr>
-                                    <th scope="col">{{translate('SL')}}#</th>
-                                    <th scope="col">{{translate('title')}}</th>
-                                    <th scope="col">{{translate('duration')}}</th>
-                                    <th scope="col">{{translate('cost')}}</th>
-                                    <th scope="col">{{translate('status')}}</th>
-                                    <th scope="col" class="__w-50px">{{translate('action')}}</th>
+                                    <th scope="col">{{\App\CPU\translate('sl#')}}</th>
+                                    <th scope="col">{{\App\CPU\translate('title')}}</th>
+                                    <th scope="col">{{\App\CPU\translate('duration')}}</th>
+                                    <th scope="col">{{\App\CPU\translate('cost')}}</th>
+                                    <th scope="col">{{\App\CPU\translate('status')}}</th>
+                                    <th scope="col" class="__w-50px">{{\App\CPU\translate('action')}}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -96,7 +95,7 @@
                                             {{$method['duration']}}
                                         </td>
                                         <td>
-                                            {{\App\Utils\BackEndHelper::set_symbol(\App\Utils\BackEndHelper::usd_to_currency($method['cost']))}}
+                                            {{\App\CPU\BackEndHelper::set_symbol(\App\CPU\BackEndHelper::usd_to_currency($method['cost']))}}
                                         </td>
 
                                         <td>
@@ -117,9 +116,8 @@
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     <a class="dropdown-item"
-                                                       href="{{route('admin.business-settings.shipping-method.edit',[$method['id']])}}">{{translate('edit')}}</a>
-                                                    <a class="dropdown-item delete cursor-pointer"
-                                                       id="{{ $method['id'] }}">{{translate('delete')}}</a>
+                                                       href="{{route('admin.business-settings.shipping-method.edit',[$method['id']])}}">{{\App\CPU\translate('Edit')}}</a>
+                                                    <a class="dropdown-item delete cursor-pointer" id="{{ $method['id'] }}">{{\App\CPU\translate('Delete')}}</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -159,20 +157,19 @@
                     status: status
                 },
                 success: function () {
-                    toastr.success('{{translate("status_updated_successfully")}}');
+                    toastr.success('{{\App\CPU\translate('Status updated successfully')}}');
                 }
             });
         });
         $(document).on('click', '.delete', function () {
             var id = $(this).attr("id");
             Swal.fire({
-                title: '{{translate("are_you_sure_delete_this")}} ?',
-                text: "{{translate('you_will_not_be_able_to_revert_this')}}!",
+                title: '{{\App\CPU\translate('Are you sure delete this')}} ?',
+                text: "{{\App\CPU\translate('You will not be able to revert this')}}!",
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: '{{translate("yes_delete_it")}}!',
-                cancelButtonText: '{{ translate("cancel") }}',
+                confirmButtonText: '{{\App\CPU\translate('Yes')}}, {{\App\CPU\translate('delete it')}}!'
             }).then((result) => {
                 if (result.value) {
                     $.ajaxSetup({
@@ -185,7 +182,7 @@
                         method: 'POST',
                         data: {id: id},
                         success: function () {
-                            toastr.success('{{translate("shipping_Method_deleted_successfully")}}');
+                            toastr.success('{{\App\CPU\translate('Shipping Method deleted successfully')}}');
                             location.reload();
                         }
                     });

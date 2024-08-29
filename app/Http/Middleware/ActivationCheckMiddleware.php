@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Utils\Helpers;
+use App\CPU\Helpers;
 use App\Traits\ActivationClass;
 use Brian2694\Toastr\Facades\Toastr;
 use Closure;
@@ -23,7 +23,7 @@ class ActivationCheckMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->is('login/'.getWebConfig(name: 'admin_login_url'))) {
+        if ($request->is('admin/auth/login')) {
             $response = $this->actch();
             $data = json_decode($response->getContent(), true);
             if (!$data['active']) {

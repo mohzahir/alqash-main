@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\CustomerWallet;
+use App\Model\CustomerWallet;
+use App\Model\Transaction;
 use Illuminate\Support\Facades\DB;
 
 class RewardPointController extends Controller

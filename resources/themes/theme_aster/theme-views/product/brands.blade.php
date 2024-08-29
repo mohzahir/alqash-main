@@ -1,19 +1,20 @@
 @extends('theme-views.layouts.app')
 
-@section('title', translate('all_Brands_Page').' | '.$web_config['name']->value.' '.translate('ecommerce'))
+@section('title', translate('All_Brands_Page').' | '.$web_config['name']->value.' '.translate(' Ecommerce'))
 
 @section('content')
+    <!-- Main Content -->
     <main class="main-content d-flex flex-column gap-3 py-3 mb-30">
         <div class="container">
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="row gy-2 align-items-center">
                         <div class="col-md-6">
-                            <h3 class="mb-1 text-capitalize">{{ translate('all_brands') }}</h3>
+                            <h3 class="mb-1">{{ translate('all_brands') }}</h3>
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb fs-12 mb-0">
-                                    <li class="breadcrumb-item"><a href="{{ route('home') }}">{{ translate('home') }}</a></li>
-                                    <li class="breadcrumb-item active" aria-current="page">{{ translate('brands') }}</li>
+                                    <li class="breadcrumb-item"><a href="{{ route('home') }}">{{ translate('Home') }}</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">{{ translate('Brands') }}</li>
                                 </ol>
                             </nav>
                         </div>
@@ -27,18 +28,18 @@
                                         </div>
                                         <div class="dropdown">
                                             <button type="button" class="border-0 bg-transparent dropdown-toggle p-0 custom-pe-3" data-bs-toggle="dropdown" aria-expanded="false">
-                                                @if(request('order_by') == 'desc')
+                                                @if($order_by=='desc')
                                                     {{ translate('Z-A') }}
-                                                @elseif(request('order_by') == 'asc')
+                                                @elseif($order_by=='asc')
                                                     {{ translate('A-Z') }}
                                                 @else
-                                                    {{ translate('Default') }}
+                                                    {{ translate('new_arrival') }}
                                                 @endif
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li>
                                                     <a class="d-flex" href="{{ route('brands') }}">
-                                                        {{ translate('Default') }}
+                                                        {{ translate('new_arrival') }}
                                                     </a>
                                                 </li>
                                                 <li>
@@ -60,9 +61,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="card">
                 <div class="card-body">
-                    <div class="auto-col xxl-items-6 justify-content-center gap-3 max-sm-grid-col-2">
+                    <div class="auto-col xxl-items-6 justify-content-center gap-3">
                         @foreach($brands as $brand)
                         <div class="brand-item grid-center">
                             <div class="hover__action">
@@ -74,19 +76,15 @@
                                     <p>{{translate('Products')}}</p>
                                 </div>
                             </div>
-                            <img width="130" loading="lazy" class="dark-support rounded text-center aspect-1 object-contain"
-                                 src="{{ getStorageImages(path:$brand->image_full_url, type:'brand') }}" alt="{{ $brand->image_alt_text ?? $brand->name}}">
-                            <h6 class="mt-2">{{$brand->name}}</h6>
+                            <img width="130" onerror="this.src='{{ theme_asset('assets/img/image-place-holder.png') }}'"
+                                 src="{{asset("storage/app/public/brand/$brand->image")}}" alt="{{$brand->name}}"
+                                 loading="lazy" class="dark-support rounded text-center">
                         </div>
                         @endforeach
+                            @if($brands->count()==0)
+                                <div class="mb-2 mt-3"><h5 class="text-center">{{translate('not_found_anything')}}</h5></div>
+                            @endif
                     </div>
-
-                    @if($brands->count()==0)
-                        <div class="d-flex flex-column justify-content-center align-items-center gap-2 py-3 w-100">
-                            <img width="80" class="mb-3" src="{{ theme_asset('assets/img/empty-state/empty-brand.svg') }}" alt="">
-                            <h5 class="text-center text-muted">{{ translate('there_is_no_Brand') }}.</h5>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -95,4 +93,6 @@
             {{$brands->links() }}
         </div>
     </main>
+    <!-- End Main Content -->
+
 @endsection

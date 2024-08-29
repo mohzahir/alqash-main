@@ -2,117 +2,72 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Contracts\Repositories\BusinessSettingRepositoryInterface;
-use App\Contracts\Repositories\HelpTopicRepositoryInterface;
-use App\Contracts\Repositories\RobotsMetaContentRepositoryInterface;
 use App\Http\Controllers\Controller;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
+use App\Model\BusinessSetting;
+use App\Model\HelpTopic;
+use Illuminate\Http\Request;
 
 class PageController extends Controller
 {
-    public function __construct(
-        private readonly BusinessSettingRepositoryInterface   $businessSettingRepo,
-        private readonly HelpTopicRepositoryInterface         $helpTopicRepo,
-        private readonly RobotsMetaContentRepositoryInterface $robotsMetaContentRepo,
-    )
+    public function helpTopic()
     {
+        $helps = HelpTopic::Status()->latest()->get();
+        return view(VIEW_FILE_NAMES['faq'], compact('helps'));
     }
 
-    public function getAboutUsView(): View
+    public function contacts()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'about-us']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $aboutUs = getWebConfig(name: 'about_us');
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_about_us'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['about_us'], compact('aboutUs', 'pageTitleBanner', 'robotsMetaContentData'));
+        $recaptcha = \App\CPU\Helpers::get_business_settings('recaptcha');
+        return view(VIEW_FILE_NAMES['contacts'],compact('recaptcha'));
     }
 
-    public function getContactView(): View
+    public function about_us()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'contacts']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $recaptcha = getWebConfig(name: 'recaptcha');
-        return view(VIEW_FILE_NAMES['contacts'], compact('recaptcha', 'robotsMetaContentData'));
+        $about_us = BusinessSetting::where('type', 'about_us')->first();
+        return view(VIEW_FILE_NAMES['about_us'], [
+            'about_us' => $about_us,
+        ]);
     }
 
-    public function getHelpTopicView(): View
+    public function termsand_condition()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'helpTopic']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $helps = $this->helpTopicRepo->getListWhere(orderBy: ['id' => 'desc'], filters: ['status' => 1, 'type' => 'default'], dataLimit: 'all');
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_faq_page'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['faq'], compact('helps', 'pageTitleBanner', 'robotsMetaContentData'));
+        $terms_condition = BusinessSetting::where('type', 'terms_condition')->first();
+        return view(VIEW_FILE_NAMES['terms_conditions_page'], compact('terms_condition'));
     }
 
-    public function getRefundPolicyView(): View|RedirectResponse
+    public function privacy_policy()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'refund-policy']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $refundPolicy = getWebConfig(name: 'refund-policy');
-        if (!$refundPolicy['status']) {
+        $privacy_policy = BusinessSetting::where('type', 'privacy_policy')->first();
+        return view(VIEW_FILE_NAMES['privacy_policy_page'], compact('privacy_policy'));
+    }
+
+    public function refund_policy()
+    {
+        $refund_policy = json_decode(BusinessSetting::where('type', 'refund-policy')->first()->value);
+        if(!$refund_policy->status){
             return back();
         }
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_refund_policy'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['refund_policy_page'], compact('refundPolicy', 'pageTitleBanner', 'robotsMetaContentData'));
+        $refund_policy = $refund_policy->content;
+        return view(VIEW_FILE_NAMES['refund_policy_page'], compact('refund_policy'));
     }
 
-    public function getReturnPolicyView(): View|RedirectResponse
+    public function return_policy()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'return-policy']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $returnPolicy = getWebConfig(name: 'return-policy');
-        if (!$returnPolicy['status']) {
+        $return_policy = json_decode(BusinessSetting::where('type', 'return-policy')->first()->value);
+        if(!$return_policy->status){
             return back();
         }
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_return_policy'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['return_policy_page'], compact('returnPolicy', 'pageTitleBanner', 'robotsMetaContentData'));
+        $return_policy = $return_policy->content;
+        return view(VIEW_FILE_NAMES['return_policy_page'], compact('return_policy'));
     }
 
-    public function getPrivacyPolicyView(): View
+    public function cancellation_policy()
     {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'privacy-policy']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $privacyPolicy = getWebConfig(name: 'privacy_policy');
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_privacy_policy'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['privacy_policy_page'], compact('privacyPolicy', 'pageTitleBanner', 'robotsMetaContentData'));
-    }
-
-    public function getCancellationPolicyView(): View|RedirectResponse
-    {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'cancellation-policy']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $cancellationPolicy = getWebConfig(name: 'cancellation-policy');
-        if (!$cancellationPolicy['status']) {
+        $cancellation_policy = json_decode(BusinessSetting::where('type', 'cancellation-policy')->first()->value);
+        if(!$cancellation_policy->status){
             return back();
         }
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_cancellation_policy'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['cancellation_policy_page'], compact('cancellationPolicy', 'pageTitleBanner', 'robotsMetaContentData'));
+        $cancellation_policy = $cancellation_policy->content;
+        return view(VIEW_FILE_NAMES['cancellation_policy_page'], compact('cancellation_policy'));
     }
-
-    public function getTermsAndConditionView(): View
-    {
-        $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'terms']);
-        if (!$robotsMetaContentData) {
-            $robotsMetaContentData = $this->robotsMetaContentRepo->getFirstWhere(params: ['page_name' => 'default']);
-        }
-        $termsCondition = getWebConfig(name: 'terms_condition');
-        $pageTitleBanner = $this->businessSettingRepo->whereJsonContains(params: ['type' => 'banner_terms_conditions'], value: ['status' => '1']);
-        return view(VIEW_FILE_NAMES['terms_conditions_page'], compact('termsCondition', 'pageTitleBanner', 'robotsMetaContentData'));
-    }
-
 }

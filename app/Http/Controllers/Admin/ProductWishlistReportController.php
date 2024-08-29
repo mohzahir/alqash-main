@@ -2,18 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Utils\Helpers;
-use App\Exports\ProductWishlistedExport;
+use App\CPU\Helpers;
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\Seller;
+use App\Model\Product;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Brian2694\Toastr\Facades\Toastr;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProductWishlistReportController extends Controller
 {
@@ -27,14 +24,13 @@ class ProductWishlistReportController extends Controller
         $search = $request['search'];
         $seller_id = $request['seller_id'];
         $sort = $request['sort'] ?? 'ASC';
-        $sellers = \App\Models\Seller::where(['status'=>'approved'])->get() ;
 
         $products = self::common_query_filter($request)
                 ->where(['request_status'=>1])
                 ->paginate(Helpers::pagination_limit())
                 ->appends(['search' => $request['search'], 'seller_id' => $seller_id, 'sort' => $request['sort']]);
 
-        return view('admin-views.report.product-in-wishlist', compact('products',  'sellers','search', 'seller_id', 'sort'));
+        return view('admin-views.report.product-in-wishlist', compact('products', 'search', 'seller_id', 'sort'));
     }
 
     /**
@@ -51,15 +47,21 @@ class ProductWishlistReportController extends Controller
         $sort = $request['sort'] ?? 'ASC';
 
         $products = self::common_query_filter($request)->where(['request_status'=>1])->get();
-        $seller = $request->has('seller_id') && $request['seller_id'] != 'inhouse' && $request['seller_id'] != 'all' ? (Seller::with('shop')->find($request->seller_id)) : ($request['seller_id'] ?? 'all');
 
-        $data = [
-            'products' =>$products,
-            'search' => $request['search'],
-            'seller' => $seller,
-            'sort' => $sort,
-        ];
-        return Excel::download(new ProductWishlistedExport($data) , 'Product-wishlisted-report.xlsx');
+        if ($products->count() == 0) {
+            Toastr::warning(\App\CPU\translate('Data is Not available!!!'));
+            return back();
+        }
+        $data = array();
+        foreach ($products as $product) {
+            $data[] = array(
+                'Product Name' => $product->name,
+                'Date' => date('d M Y', strtotime($product->created_at)),
+                'Total in Wishlist' => $product->wish_list_count,
+            );
+        }
+
+        return (new FastExcel($data))->download('product_in_wishlist.xlsx');
     }
 
     public function common_query_filter($request){
@@ -67,7 +69,7 @@ class ProductWishlistReportController extends Controller
         $seller_id = $request['seller_id'];
         $sort = $request['sort'] ?? 'ASC';
 
-        return Product::with(['wishList'])
+        return Product::with(['wish_list'])
             ->when($seller_id == 'in_house', function ($query) {
                 $query->where(['added_by' => 'admin']);
             })
@@ -78,7 +80,7 @@ class ProductWishlistReportController extends Controller
                 $q->where('name', 'Like', '%' . $search . '%');
             })
             ->when($sort, function ($query) use ($sort) {
-                $query->withCount('wishList')
+                $query->withCount('wish_list')
                     ->orderBy('wish_list_count', $sort);
             });
     }

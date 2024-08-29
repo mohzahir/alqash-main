@@ -1,8 +1,5 @@
 <?php
 
-use App\Providers\InterfaceServiceProvider;
-use App\Providers\ObserverServiceProvider;
-
 return [
 
     /*
@@ -184,12 +181,9 @@ return [
         \App\Providers\PaymentConfigProvider::class,
         \App\Providers\ConfigServiceProvider::class,
         Laravelpkg\Laravelchk\LaravelchkServiceProvider::class,
+       /* Amirami\Localizator\ServiceProvider::class*/
+
         App\Providers\ThemeServiceProvider::class,
-        /* for export excel */
-        Maatwebsite\Excel\ExcelServiceProvider::class,
-        //Intervention\Image\ImageServiceProvider::class,
-        InterfaceServiceProvider::class,
-        ObserverServiceProvider::class
     ],
 
     /*
@@ -240,10 +234,9 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-        //'Image' => Intervention\Image\Facades\Image::class,
-        'Helper' => \App\Utils\Helpers::class,
-        'Madzipper' => Madnest\Madzipper\Madzipper::class,
-        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+        'Image' => Intervention\Image\Facades\Image::class,
+        'Helper' => \App\CPU\Helpers::class,
+        'Madzipper' => Madnest\Madzipper\Madzipper::class
     ],
 
 ];

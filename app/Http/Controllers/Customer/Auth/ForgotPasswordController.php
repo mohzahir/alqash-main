@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Customer\Auth;
 
-use App\Events\PasswordResetEvent;
+use App\CPU\Helpers;
+use App\CPU\SMS_module;
 use App\Http\Controllers\Controller;
-use App\Models\PasswordReset;
-use App\Models\User;
-use App\Utils\Helpers;
-use App\Utils\SMS_module;
+use App\Model\PasswordReset;
+use App\User;
 use Brian2694\Toastr\Facades\Toastr;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Modules\Gateways\Traits\SmsGateway;
+use function App\CPU\translate;
 
 class ForgotPasswordController extends Controller
 {
@@ -50,37 +50,26 @@ class ForgotPasswordController extends Controller
 
                     Toastr::error(translate('please_try_again_after_') .  CarbonInterval::seconds($time)->cascade()->forHumans());
                 }else{
-                    try{
-                        $token = Str::random(120);
-                        $reset_data = PasswordReset::where(['identity' => $customer['email']])->latest()->first();
-                        if($reset_data){
-                            $reset_data->token = $token;
-                            $reset_data->created_at = now();
-                            $reset_data->updated_at = now();
-                            $reset_data->save();
-                        }else{
-                            $reset_data = new PasswordReset();
-                            $reset_data->identity = $customer['email'];
-                            $reset_data->token = $token;
-                            $reset_data->user_type = 'customer';
-                            $reset_data->created_at = now();
-                            $reset_data->updated_at = now();
-                            $reset_data->save();
-                        }
-                        $resetUrl = url('/') . '/customer/auth/reset-password?token=' . $token;
-                        $data = [
-                            'userType' => 'customer',
-                            'templateName' => 'forgot-password',
-                            'userName' => $customer['f_name'],
-                            'subject' => translate('password_reset'),
-                            'title' => translate('password_reset'),
-                            'passwordResetURL' => $resetUrl,
-                        ];
-                        event(new PasswordResetEvent(email: $customer['email'],data: $data));
-                        Toastr::success(translate('Check_your_email').' '.translate('Password_reset_url_sent'));
-                    } catch (\Exception $exception) {
-                        Toastr::error(translate('email_is_not_configured').'. '.translate('contact_with_the_administrator'));
+                    $token = Str::random(120);
+                    $reset_data = PasswordReset::where(['identity' => $customer['email']])->latest()->first();
+                    if($reset_data){
+                        $reset_data->token = $token;
+                        $reset_data->created_at = now();
+                        $reset_data->updated_at = now();
+                        $reset_data->save();
+                    }else{
+                        $reset_data = new PasswordReset();
+                        $reset_data->identity = $customer['email'];
+                        $reset_data->token = $token;
+                        $reset_data->user_type = 'customer';
+                        $reset_data->created_at = now();
+                        $reset_data->updated_at = now();
+                        $reset_data->save();
                     }
+                    $reset_url = url('/') . '/customer/auth/reset-password?token=' . $token;
+                    Mail::to($customer['email'])->send(new \App\Mail\PasswordResetMail($reset_url));
+
+                    Toastr::success('Check your email. Password reset url sent.');
                 }
 
                 return back();
@@ -110,32 +99,14 @@ class ForgotPasswordController extends Controller
                         $reset_data->updated_at = now();
                         $reset_data->save();
                     }
-
-                    $published_status = 0;
-                    $payment_published_status = config('get_payment_publish_status');
-                    if (isset($payment_published_status[0]['is_published'])) {
-                        $published_status = $payment_published_status[0]['is_published'];
-                    }
-
-                    $response = '';
-                    if($published_status == 1){
-                        $response = SmsGateway::send($customer->phone, $token);
-                    }else{
-                        $response = SMS_module::send($customer->phone, $token);
-                    }
-
-                    if ($response == "not_found") {
-                        Toastr::error(translate('SMS_configuration_missing'));
-                        return back();
-                    }
-
-                    Toastr::success(translate('Check_your_phone').translate('Password_reset_OTP_sent'));
+                    SMS_module::send($customer->phone, $token);
+                    Toastr::success('Check your phone. Password reset OTP sent.');
                     return redirect()->route('customer.auth.otp-verification', ['identity'=>$customer->phone]);
                 }
             }
         }
 
-        Toastr::error(translate('No_such_user_found'));
+        Toastr::error('No such user found!');
         return back();
     }
 
@@ -160,32 +131,13 @@ class ForgotPasswordController extends Controller
                 $token_info->temp_block_time = null;
                 $token_info->created_at = now();
                 $token_info->save();
+                SMS_module::send($customer->phone, $token);
 
-                $published_status = 0;
-                $payment_published_status = config('get_payment_publish_status');
-                if (isset($payment_published_status[0]['is_published'])) {
-                    $published_status = $payment_published_status[0]['is_published'];
-                }
-
-                $response = '';
-                if($published_status == 1){
-                    $response = SmsGateway::send($customer->phone, $token);
-                }else{
-                    $response = SMS_module::send($customer->phone, $token);
-                }
-
-                if ($response == "not_found") {
-                    return response()->json([
-                        'status'=>0,
-                        'message'=>translate('SMS_configuration_missing')
-                    ]);
-                }else{
-                    return response()->json([
-                        'status' => 1,
-                        'new_time' => $otp_interval_time,
-                        'message'=>translate('OTP_sent_successfully')
-                    ]);
-                }
+                return response()->json([
+                    'status' => 1,
+                    'new_time' => $otp_interval_time,
+                    'message'=>translate('OTP_sent_successfully')
+                ]);
             }
         }else{
             return response()->json([
@@ -282,7 +234,7 @@ class ForgotPasswordController extends Controller
             $token = $request['token'];
             return view(VIEW_FILE_NAMES['reset_password'], compact('token'));
         }
-        Toastr::error(translate('Invalid_credentials'));
+        Toastr::error('Invalid credentials');
         return back();
     }
 
@@ -310,11 +262,11 @@ class ForgotPasswordController extends Controller
                 ->update([
                     'password' => bcrypt(str_replace(' ', '', $request['password']))
                 ]);
-            Toastr::success(translate('Password_reset_successfully'));
+            Toastr::success('Password reset successfully.');
             DB::table('password_resets')->where('user_type','customer')->where(['token' => $request['reset_token']])->delete();
             return redirect('/');
         }
-        Toastr::error(translate('Invalid_data'));
+        Toastr::error('Invalid data.');
         return back();
     }
 }

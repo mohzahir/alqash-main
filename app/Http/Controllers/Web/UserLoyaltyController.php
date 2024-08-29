@@ -2,75 +2,79 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Contracts\Repositories\LoyaltyPointTransactionRepositoryInterface;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Web\LoyaltyExchangeCurrencyRequest;
-use App\Mail\AddFundToWallet;
-use App\Traits\CustomerTrait;
-use Brian2694\Toastr\Facades\Toastr;
-use Exception;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use App\Model\LoyaltyPointTransaction;
+use App\CPU\Helpers;
+use Illuminate\Support\Facades\Validator;
+use Brian2694\Toastr\Facades\Toastr;
+use App\CPU\CustomerManager;
 use Illuminate\Support\Facades\Mail;
 
 class UserLoyaltyController extends Controller
 {
-    use CustomerTrait;
 
-    public function __construct(private readonly LoyaltyPointTransactionRepositoryInterface $loyaltyPointTransactionRepo)
+    public function index()
     {
-    }
+        $loyalty_point_status = Helpers::get_business_settings('loyalty_point_status');
+        $wallet_status = Helpers::get_business_settings('wallet_status');
 
-    public function index(Request $request): View|RedirectResponse
-    {
-        $loyaltyPointStatus = getWebConfig(name: 'loyalty_point_status');
-        if ($loyaltyPointStatus == 1) {
-            $walletStatus = getWebConfig(name: 'wallet_status');
-            $totalLoyaltyPoint = auth('customer')->user()->loyalty_point;
-            $loyaltyPointMinimumPoint = getWebConfig(name: 'loyalty_point_minimum_point');
-            $loyaltyPointExchangeRate = getWebConfig(name: 'loyalty_point_exchange_rate');
-            $loyaltyPointList = $this->loyaltyPointTransactionRepo->getListWhere(
-                orderBy: ['id' => 'desc'],
-                filters: ['customer_id' => auth('customer')->id(), 'transaction_type' => $request['type']],
-                dataLimit: getWebConfig(name: 'pagination_limit')
-            );
-            return view(VIEW_FILE_NAMES['user_loyalty'], compact('totalLoyaltyPoint', 'loyaltyPointStatus', 'walletStatus', 'loyaltyPointList', 'loyaltyPointMinimumPoint', 'loyaltyPointExchangeRate'));
+        if($loyalty_point_status==1)
+        {
+            $total_loyalty_point = auth('customer')->user()->loyalty_point;
+
+        $loyalty_point_list = LoyaltyPointTransaction::where('user_id',auth('customer')->id())
+                                                    ->latest()
+                                                    ->paginate(15);
+        return view(VIEW_FILE_NAMES['user_loyalty'],compact('total_loyalty_point','loyalty_point_status','wallet_status','loyalty_point_list'));
         }else{
-            Toastr::warning(translate('access_denied'));
-            return redirect()->route('home');
+            Toastr::warning(\App\CPU\translate('access_denied!'));
+            return back();
         }
-
     }
 
-    public function getLoyaltyExchangeCurrency(LoyaltyExchangeCurrencyRequest $request): RedirectResponse
+    public function loyalty_exchange_currency(Request $request)
     {
-        if (getWebConfig(name: 'wallet_status') != 1 || getWebConfig(name: 'loyalty_point_status') != 1) {
-            Toastr::warning(translate('transfer_loyalty_point_to_currency_is_not_possible_at_this_moment!'));
-            return redirect()->route('home');
-        }
+        $wallet_status = Helpers::get_business_settings('wallet_status');
+        $loyalty_point_status = Helpers::get_business_settings('loyalty_point_status');
 
-        $user = auth('customer')->user();
-        if ($request['point'] < (int)getWebConfig(name: 'loyalty_point_minimum_point') || $request['point'] > $user['loyalty_point']) {
-            Toastr::warning(translate('exchange_requirements_not_matched'));
+        if($wallet_status != 1 || $loyalty_point_status !=1)
+        {
+            Toastr::warning(\App\CPU\translate('transfer_loyalty_point_to_currency_is_not_possible_at_this_moment!'));
             return back();
         }
 
-        $walletTransaction = $this->createWalletTransaction(user_id: $user['id'], amount: $request['point'], transaction_type: 'loyalty_point', reference: 'point_to_wallet');
-        $this->loyaltyPointTransactionRepo->addLoyaltyPointTransaction(userId: $user['id'], reference: $walletTransaction['transaction_id'], amount: $request['point'], transactionType: 'point_to_wallet');
+        $request->validate([
+            'point' => 'required|integer|min:1'
+        ]);
 
-        try {
-            Mail::to($user['email'])->send(new AddFundToWallet($walletTransaction));
-        } catch (Exception $ex) {
+
+        $user = auth('customer')->user();
+        if($request->point < (int)Helpers::get_business_settings('loyalty_point_minimum_point')
+            || $request->point > $user->loyalty_point)
+        {
+            Toastr::warning(\App\CPU\translate('insufficient_point!'));
+            return back();
         }
 
-        Toastr::success(translate('point_to_wallet_transfer_successfully'));
-        return back();
-    }
+        $wallet_transaction = CustomerManager::create_wallet_transaction($user->id,$request->point,'loyalty_point','point_to_wallet');
+        CustomerManager::create_loyalty_point_transaction($user->id, $wallet_transaction->transaction_id, $request->point, 'point_to_wallet');
 
-    public function getLoyaltyCurrencyAmount(Request $request): JsonResponse
-    {
-        return response()->json(webCurrencyConverter(amount: $request['amount']));
+        try
+        {
+
+            Mail::to($user->email)->send(new \App\Mail\AddFundToWallet($wallet_transaction));
+
+
+
+        }catch(\Exception $ex){
+            info($ex);
+            //dd($ex);
+        }
+
+        Toastr::success(\App\CPU\translate('point_to_wallet_transfer_successfully'));
+        return back();
+
+
     }
 }

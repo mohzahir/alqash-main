@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Traits\PushNotificationTrait;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +12,6 @@ use Madnest\Madzipper\Facades\Madzipper;
 
 class DatabaseRefresh extends Command
 {
-    use PushNotificationTrait;
     /**
      * The name and signature of the console command.
      *
@@ -45,7 +43,6 @@ class DatabaseRefresh extends Command
      */
     public function handle()
     {
-        $this->demoResetNotification();
         Artisan::call('db:wipe');
         $sql_path = base_path('demo/database.sql');
         DB::unprepared(file_get_contents($sql_path));

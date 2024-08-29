@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attribute;
-use App\Models\ProductCompare;
+use App\Model\Attribute;
+use App\Model\ProductCompare;
+use App\Model\BusinessSetting;
 use Illuminate\Http\Request;
 
 
@@ -66,6 +67,7 @@ class CompareController extends Controller
 
                     $compare_product_ids = $this->product_compare->where('user_id', auth('customer')->id())->pluck('product_id')->toArray();
                     $product_count = count($compare_product_ids);
+//                    $product_count = $this->product_compare->where(['product_id' => $request->product_id])->count();
                     session()->put('compare_list', $this->product_compare->where('user_id', auth('customer')->id())->pluck('product_id')->toArray());
 
                     return response()->json([
@@ -87,15 +89,8 @@ class CompareController extends Controller
             }
             else{
                 $new_compare_list = $this->product_compare->find($request->compare_id);
-                if ($new_compare_list) {
-                    $new_compare_list->product_id = $request->product_id;
-                    $new_compare_list->save();
-                }else{
-                    $this->product_compare->insert([
-                        'user_id'=> auth('customer')->id(),
-                        'product_id'=> $request->product_id
-                    ]);
-                }
+                $new_compare_list->product_id = $request->product_id;
+                $new_compare_list->save();
                 return redirect()->back();
             }
         }
